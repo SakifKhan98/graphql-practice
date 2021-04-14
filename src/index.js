@@ -1,4 +1,5 @@
 import { GraphQLServer } from "graphql-yoga";
+import { v4 as uuidv4 } from "uuid";
 
 // Scalar types - String, Boolean, Int, Float, ID
 // Non-Scalar types - Object, Array
@@ -96,6 +97,11 @@ const typeDefs = `
       post: Post!
       comments: [Comment!]!
     }
+    type Mutation {
+      createUser(name: String!, email: String!, age: Int): User!
+      createPost(title: String!, body: String!, published: Boolean!, author: ID!): Post!
+      createComment(text: String!, author: ID!, post: ID!): Comment!
+    }
 
     type User {
       id: ID!
@@ -168,6 +174,62 @@ const resolvers = {
           "Lorem ipsum dolor sit amet consectetur, adipisicing elit. Natus, obcaecati!",
         published: true,
       };
+    },
+  },
+  Mutation: {
+    createUser(parent, args, ctx, info) {
+      const emailTaken = users.some((user) => user.email === args.email);
+
+      if (emailTaken) {
+        throw new Error("Email Already taken");
+      }
+
+      const user = {
+        id: uuidv4(),
+        name: args.name,
+        email: args.email,
+        age: args.age,
+      };
+      users.push(user);
+      return user;
+    },
+    createPost(parent, args, ctx, info) {
+      const userExists = users.some((user) => user.id === args.author);
+
+      if (!userExists) {
+        throw new Error("User does not exist");
+      }
+
+      const post = {
+        id: uuidv4(),
+        title: args.title,
+        body: args.body,
+        isPublished: args.published,
+        author: args.author,
+      };
+
+      posts.push(post);
+      return post;
+    },
+    createComment(parent, args, ctx, info) {
+      const userExists = users.some((user) => user.id === args.author);
+      const postExists = posts.some(
+        (post) => post.id === args.post && post.isPublished === True
+      );
+      if (!userExists) {
+        throw new Error("User does not exist");
+      }
+      if (!postExists) {
+        throw new Error("Post does not exist");
+      }
+      if (userExists && postExists) {
+        const comment = {
+          id: uuidv4(),
+          text: args.text,
+          author: args.author,
+          post: args.post,
+        };
+      }
     },
   },
   Post: {
